@@ -39,6 +39,6 @@ def setup():
 #import webrepl
 #webrepl.start()
 import hw_update_ota
-hw_update_ota.updateOrStart()
+hw_update_ota.formatOrUpdateAndReboot()
 """)
     return vfs
