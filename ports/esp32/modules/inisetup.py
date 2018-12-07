@@ -38,5 +38,7 @@ def setup():
 #esp.osdebug(None)
 #import webrepl
 #webrepl.start()
+import hw_update_ota
+hw_update_ota.updateOrStart()
 """)
     return vfs
