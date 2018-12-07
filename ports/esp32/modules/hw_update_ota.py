@@ -133,7 +133,7 @@ def updateAndReboot():
   wlan.active(False)
   reboot('SUCCESS: Successful update. Reboot')
 
-def updateAndReboot():
+def formatOrUpdateAndReboot():
   '''
     May reboot several times to format the filesystem and do the update.
   '''
