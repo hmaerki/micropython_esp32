@@ -394,7 +394,14 @@ STATIC mp_obj_t esp_status(size_t n_args, const mp_obj_t *args) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(esp_status_obj, 1, 2, esp_status);
 
-STATIC mp_obj_t esp_scan(mp_obj_t self_in) {
+
+/*
+  Parameters:
+    scan(scan_time_ms, channel)
+     scan_time_ms: Positive: Active scan, Negative: Passiv scan
+     channel: 0: All channels
+*/
+STATIC mp_obj_t esp_scan(mp_obj_t self_in, mp_obj_t scan_time_ms_, mp_obj_t channel_) {
     // check that STA mode is active
     wifi_mode_t mode;
     ESP_EXCEPTIONS(esp_wifi_get_mode(&mode));
@@ -404,6 +411,20 @@ STATIC mp_obj_t esp_scan(mp_obj_t self_in) {
 
     mp_obj_t list = mp_obj_new_list(0, NULL);
     wifi_scan_config_t config = { 0 };
+    // config.ssid = (uint8_t*)"waffenplatzstrasse26";
+
+    mp_int_t scan_time_ms = mp_obj_get_int(scan_time_ms_);
+    mp_int_t channel = mp_obj_get_int(channel_);
+    config.scan_type = WIFI_SCAN_TYPE_PASSIVE;
+    if (scan_time_ms < 0) {
+      config.scan_type = WIFI_SCAN_TYPE_PASSIVE;
+      scan_time_ms = -scan_time_ms;
+    }
+    config.channel = channel;
+    config.scan_time.passive = scan_time_ms;
+    config.scan_time.active.min = scan_time_ms/5;
+    config.scan_time.active.max = scan_time_ms;
+
     // XXX how do we scan hidden APs (and if we can scan them, are they really hidden?)
     MP_THREAD_GIL_EXIT();
     esp_err_t status = esp_wifi_scan_start(&config, 1);
@@ -430,7 +451,7 @@ STATIC mp_obj_t esp_scan(mp_obj_t self_in) {
     return list;
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(esp_scan_obj, esp_scan);
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(esp_scan_obj, esp_scan);
 
 STATIC mp_obj_t esp_isconnected(mp_obj_t self_in) {
     wlan_if_obj_t *self = MP_OBJ_TO_PTR(self_in);
