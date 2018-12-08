@@ -7,7 +7,7 @@ import machine
 # See: https://github.com/tempstabilizer2018group/tempstabilizer2018/blob/master/software/http_server/python/python3_github_pull.py
 strFILENAME_SW_VERSION = 'VERSION.TXT'
 
-strMAC = ':'.join(['%02X'%i for i in machine.unique_id()])
+strMAC = ''.join(['%02X'%i for i in machine.unique_id()])
 
 # See: https://github.com/tempstabilizer2018group/temp_stabilizer_2018/blob/master/software_rpi/rpi_root/etc/dhcpcd.conf
 strGATEWAY_PI = '192.168.4.1'
@@ -18,12 +18,15 @@ strSERVER_DEFAULT = 'http://www.tempstabilizer2018.org'
 strWLAN_SSID = 'TempStabilizer2018'
 strWLAN_PW = None
 
-def getSwVersion():
+def __getSwVersion():
+  '''TODO: Cache'''
   try:
     with open(strFILENAME_SW_VERSION, 'r') as fIn:
       return fIn.read().strip()
   except:
     return 'none'
+
+strSwVersion = __getSwVersion()
 
 def getServer(wlan):
   listIfconfig = wlan.ifconfig()
@@ -33,7 +36,13 @@ def getServer(wlan):
   return strSERVER_DEFAULT
 
 def getDownloadUrl(wlan):
-  return '%s/softwareupdate?mac=%s&version=%s' % (getServer(wlan), strMAC, getSwVersion())
+  return __getUrl(wlan, 'software')
+
+def getVersionCheckUrl(wlan):
+  return __getUrl(wlan, 'versioncheck')
+
+def __getUrl(wlan, strFunction):
+  return '%s/pull/%s.download?mac=%s&version=%s' % (getServer(wlan), strFunction, strMAC, strSwVersion)
 
 class Gpio:
   def __init__(self):
@@ -82,17 +91,12 @@ def formatAndReboot():
   inisetup.setup()
   reboot('Reboot after format filesystem')
 
-def connect(wlan, strSsid, strPassword):
-  wlan.connect(strSsid, strPassword)
-  for iPause in range(10):
-    # Do not use self.delay_ms(): Light sleep will kill the wlan!
-    utime.sleep_ms(1000)
-    if wlan.isconnected():
-      print('connected!')
-      return True
-  return False
-
 def update(strUrl):
+  '''
+    Returns True: If a new software was installed.
+    Returns False: If there is no new software.
+    On error: reboot
+  '''
   import errno
   import upip
   import urequests
@@ -123,10 +127,13 @@ def update(strUrl):
     return ret
 
   print('HTTP-Get ' + strUrl)
-  r = urequests.get(strUrl)
-  if r.status_code != 200:
-    print('FAILED %d %s' % (r.status_code, r.reason))
-    return False
+  try:
+    r = urequests.get(strUrl)
+    if r.status_code != 200:
+      reboot('FAILED %d %s' % (r.status_code, r.reason))
+      r.close()
+  except OSError as e:
+    reboot('FAILED %s' % e)
 
   tar = upip_utarfile.TarFile(fileobj=r.raw)
   for info in tar:
@@ -141,7 +148,17 @@ def update(strUrl):
   print('Successful update!')
   return True
 
-def updateAndReboot():
+def connect(wlan, strSsid, strPassword):
+  wlan.connect(strSsid, strPassword)
+  for iPause in range(10):
+    # Do not use self.delay_ms(): Light sleep will kill the wlan!
+    utime.sleep_ms(1000)
+    if wlan.isconnected():
+      print('connected!')
+      return True
+  return False
+
+def connectWlanReboot():
   import network
 
   objGpio.pwmLed(freq=10)
@@ -154,16 +171,22 @@ def updateAndReboot():
   bConnected = connect(wlan, strWLAN_SSID, strWLAN_PW)
   if not bConnected:
     reboot('Could not connect to wlan' )
+  return wlan
+
+def updateAndReboot():
+  wlan = connectWlanReboot()
 
   strUrl = getDownloadUrl(wlan)
-  bSuccess = update(strUrl)
-  if not bSuccess:
-    reboot('Could not update')
-
+  bSoftwareUpdated = update(strUrl)
   wlan.active(False)
+
+  if not bSoftwareUpdated:
+    # This is somehow strange: There shouldn't be any software installed....s
+    return
+
   reboot('SUCCESS: Successful update. Reboot')
 
-def checkUpdate():
+def bootCheckUpdate():
   '''
     May reboot several times to format the filesystem and do the update.
   '''
@@ -180,6 +203,50 @@ def checkUpdate():
   if not isUpdateFinished():
     print('Update was not finished. Format')
     formatAndReboot()
+
+  objGpio.setLed(False)
+
+def getSwVersionGit(wlan):
+  '''
+    returns verions: On success
+    returns None: on failure
+  '''
+  import urequests
+  strUrl = getVersionCheckUrl(wlan)
+  print('HTTP-Get ' + strUrl)
+  try:
+    r = urequests.get(strUrl)
+    if r.status_code != 200:
+      print('FAILED %d %s' % (r.status_code, r.reason))
+      r.close()
+      return None
+    strSwVersionGit = r.text
+    r.close()
+    return strSwVersionGit
+  except OSError as e:
+    print('FAILED %s' % e)
+  return None
+
+def checkForNewSwAndReboot(wlan):
+  '''
+    returns True: The version changed
+    returns False: Same version or error
+  '''
+  strSwVersionGit = getSwVersionGit(wlan)
+  if strSwVersionGit != None:
+    print('Software versions: node/git: %s/%s' % (strSwVersion, strSwVersionGit))
+    if strSwVersionGit != strSwVersion:
+      print('Software version CHANGED')
+      return True
+  return False
+  
+def checkForNewSwAndRebootRepl():
+  wlan = connectWlanReboot()
+  bNewSwVersion = checkForNewSwAndReboot(wlan)
+  wlan.active(False)
+  if bNewSwVersion:
+    formatAndReboot()
+  objGpio.setLed(False)
 
 class Command:
   def __init__(self, func):

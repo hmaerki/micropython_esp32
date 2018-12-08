@@ -42,10 +42,12 @@ def setup():
 import hw_update_ota
 
 # Register some useful commands
+checkForNewSwAndReboot = hw_update_ota.Command(hw_update_ota.checkForNewSwAndRebootRepl)
+updateAndReboot = hw_update_ota.Command(hw_update_ota.updateAndReboot)
 formatAndReboot = hw_update_ota.Command(hw_update_ota.formatAndReboot)
 import machine
 reboot = hw_update_ota.Command(machine.reset)
 
-hw_update_ota.checkUpdate()
+hw_update_ota.bootCheckUpdate()
 """)
     return vfs
