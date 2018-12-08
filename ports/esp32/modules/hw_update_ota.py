@@ -4,18 +4,22 @@ import uos
 import utime
 import machine
 
-strFILENAME_UPDATE_FINISHED = 'VERSION'
+strFILENAME_SW_VERSION = 'VERSION'
 
 strMAC = ':'.join(['%02X'%i for i in machine.unique_id()])
 
-# See: git://temp_stabilizer_2018/software_rpi/rpi_root/etc/dhcpcd.conf
+# See: https://github.com/tempstabilizer2018group/temp_stabilizer_2018/blob/master/software_rpi/rpi_root/etc/dhcpcd.conf
 strGATEWAY_PI = '192.168.4.1'
 strSERVER_PI = 'http://%s:3001' % strGATEWAY_PI
 strSERVER_DEFAULT = 'http://www.tempstabilizer2018.org'
 
+# See: https://github.com/tempstabilizer2018group/temp_stabilizer_2018/blob/master/software_rpi/rpi_root/etc/hostapd/hostapd.conf
+strWLAN_SSID = 'TempStabilizer2018'
+strWLAN_PW = None
+
 def getSwVersion():
   try:
-    with open(strFILENAME_UPDATE_FINISHED, 'r') as fIn:
+    with open(strFILENAME_SW_VERSION, 'r') as fIn:
       return fIn.read().strip()
   except:
     return 'none'
@@ -60,7 +64,7 @@ def isFilesystemEmpty():
   return len(uos.listdir()) == 1
 
 def isUpdateFinished():
-  return strFILENAME_UPDATE_FINISHED in uos.listdir()
+  return strFILENAME_SW_VERSION in uos.listdir()
 
 def reboot(strReason):
   print(strReason)
@@ -145,9 +149,10 @@ def updateAndReboot():
   wlan.active(True)
 
   # listWlans = wlan.scan(200, 6)
-  bConnected = connect(wlan, 'waffenplatzstrasse26', 'guguseli')
+  print('Connecting to %s/%s' % (strWLAN_SSID, strWLAN_PW))
+  bConnected = connect(wlan, strWLAN_SSID, strWLAN_PW)
   if not bConnected:
-    reboot('Could not connect to wlan')
+    reboot('Could not connect to wlan' )
 
   strUrl = getDownloadUrl(wlan)
   bSuccess = update(strUrl)
