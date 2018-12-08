@@ -4,49 +4,74 @@ import uos
 import utime
 import machine
 
-FILENAME_UPDATE_FINISHED = 'update_finished'
+strFILENAME_UPDATE_FINISHED = 'VERSION'
 
-pin_button = machine.Pin(16, machine.Pin.IN, machine.Pin.PULL_UP)
-pin_led = machine.Pin(22, machine.Pin.OUT)
-pwm = None
+strMAC = ':'.join(['%02X'%i for i in machine.unique_id()])
 
-def pwmLed(freq=10):
-  global pwm
-  pwm = machine.PWM(pin_led, freq=freq)
+# See: git://temp_stabilizer_2018/software_rpi/rpi_root/etc/dhcpcd.conf
+strGATEWAY_PI = '192.168.4.1'
+strSERVER_PI = 'http://%s:3001' % strGATEWAY_PI
+strSERVER_DEFAULT = 'http://www.tempstabilizer2018.org'
 
-def setLed(bOn=True):
-  global pwm
-  if pwm != None:
-    pwm.deinit()
-  pin_led.value(bOn)
+def getSwVersion():
+  try:
+    with open(strFILENAME_UPDATE_FINISHED, 'r') as fIn:
+      return fIn.read().strip()
+  except:
+    return 'none'
+
+def getServer(wlan):
+  listIfconfig = wlan.ifconfig()
+  strGateway = listIfconfig[2]
+  if strGateway == strGATEWAY_PI:
+    return strSERVER_PI
+  return strSERVER_DEFAULT
+
+def getDownloadUrl(wlan):
+  return '%s/softwareupdate?mac=%s&version=%s' % (getServer(wlan), strMAC, getSwVersion())
+
+class Gpio:
+  def __init__(self):
+    self.pin_button = machine.Pin(16, machine.Pin.IN, machine.Pin.PULL_UP)
+    self.pin_led = machine.Pin(22, machine.Pin.OUT)
+    self.pwm = None
+
+  def pwmLed(self, freq=10):
+    self.pwm = machine.PWM(self.pin_led, freq=freq)
+
+  def setLed(self, bOn=True):
+    if self.pwm != None:
+      self.pwm.deinit()
+    self.pin_led.value(bOn)
+
+  def isButtonPressed(self):
+    '''Returns True if the Button is pressed.'''
+    return self.pin_button.value() == 0
+
+  def isPowerOnBoot(self):
+    '''Returns True if power on. False if reboot by software or watchdog.'''
+    return machine.PWRON_RESET == machine.reset_cause()
+
+
+objGpio = Gpio()
 
 def isFilesystemEmpty():
   # Only 'boot.py' exists.
   return len(uos.listdir()) == 1
 
 def isUpdateFinished():
-  return FILENAME_UPDATE_FINISHED in uos.listdir()
+  return strFILENAME_UPDATE_FINISHED in uos.listdir()
 
 def reboot(strReason):
   print(strReason)
-  setLed(bOn=False)
-  # uos.sync()
+  objGpio.setLed(bOn=False)
+  # uos.sync() does not exist. Maybe a pause does the same. Maybe its event not used.
   utime.sleep_ms(1000)
   machine.reset()
 
-## States of the button
-
-def isButtonPressed():
-  '''Returns True if the Button is pressed.'''
-  return pin_button.value() == 0
-
-def isPowerOnBoot():
-  '''Returns True if power on. False if reboot by software or watchdog.'''
-  return machine.PWRON_RESET == machine.reset_cause()
-
 def formatAndReboot():
   '''Destroy the filesystem so that it will be formatted during next boot'''
-  pwmLed(freq=10)
+  objGpio.pwmLed(freq=10)
   import inisetup
   # See: https://github.com/micropython/micropython/blob/master/ports/esp32/modules/inisetup.py
   inisetup.setup()
@@ -108,16 +133,13 @@ def update(strUrl):
     upip.save_file(info.name, subf)
   r.close()
 
-  with open(FILENAME_UPDATE_FINISHED, 'w') as f:
-    pass
-  
   print('Successful update!')
   return True
 
 def updateAndReboot():
   import network
 
-  pwmLed(freq=10)
+  objGpio.pwmLed(freq=10)
 
   wlan = network.WLAN(network.STA_IF)
   wlan.active(True)
@@ -127,7 +149,8 @@ def updateAndReboot():
   if not bConnected:
     reboot('Could not connect to wlan')
 
-  bSuccess = update('https://www.maerki.com/hans/tmp/node_heads-SLASH-master_1.tar')
+  strUrl = getDownloadUrl(wlan)
+  bSuccess = update(strUrl)
   if not bSuccess:
     reboot('Could not update')
 
@@ -138,9 +161,9 @@ def checkUpdate():
   '''
     May reboot several times to format the filesystem and do the update.
   '''
-  setLed(False)
+  objGpio.setLed(False)
 
-  if isButtonPressed() and isPowerOnBoot():
+  if objGpio.isButtonPressed() and objGpio.isPowerOnBoot():
     print('Button presed. Format')
     formatAndReboot()
 

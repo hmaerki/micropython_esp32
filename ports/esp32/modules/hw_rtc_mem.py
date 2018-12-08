@@ -37,37 +37,40 @@ OFFSET_STRING_BYTES = 4
 OFFSET_MAGIC_BYTES = 8
 ENCODING = 'utf-8'
 
-def writeRtcMem(s):
-  '''
-    Writes a string into the slow memory.
-  '''
-  b = bytes(s, ENCODING)
-  l = len(s)
-  l_aligned4 = l + 4 - l%4
-  machine.mem32[ADDR+0] = l
-  machine.mem32[ADDR+l_aligned4+OFFSET_MAGIC_BYTES] = MAGIC
-  mem = uctypes.bytearray_at(ADDR+OFFSET_STRING_BYTES, l)
-  mem[:l] = b
+class RtcMem:
+  def writeRtcMem(self, s):
+    '''
+      Writes a string into the slow memory.
+    '''
+    b = bytes(s, ENCODING)
+    l = len(s)
+    l_aligned4 = l + 4 - l%4
+    machine.mem32[ADDR+0] = l
+    machine.mem32[ADDR+l_aligned4+OFFSET_MAGIC_BYTES] = MAGIC
+    mem = uctypes.bytearray_at(ADDR+OFFSET_STRING_BYTES, l)
+    mem[:l] = b
 
-def readRtcMem(default=''):
-  '''
-    Reads a string into the slow memory.
-  '''
-  l = machine.mem32[ADDR+0]
-  if (l<=0) or (l>0x2000-OFFSET_MAGIC_BYTES):
-    print('RTC-Mem: wrong size.')
-    return default
-  l_aligned4 = l + 4 - l%4
-  if machine.mem32[ADDR+l_aligned4+OFFSET_MAGIC_BYTES] != MAGIC:
-    print('RTC-Mem: Wrong magic number.')
-    return default
-  mem = uctypes.bytearray_at(ADDR+OFFSET_STRING_BYTES, l)
-  return bytes(mem).decode(ENCODING)
+  def readRtcMem(self, default=''):
+    '''
+      Reads a string into the slow memory.
+    '''
+    l = machine.mem32[ADDR+0]
+    if (l<=0) or (l>0x2000-OFFSET_MAGIC_BYTES):
+      print('RTC-Mem: wrong size.')
+      return default
+    l_aligned4 = l + 4 - l%4
+    if machine.mem32[ADDR+l_aligned4+OFFSET_MAGIC_BYTES] != MAGIC:
+      print('RTC-Mem: Wrong magic number.')
+      return default
+    mem = uctypes.bytearray_at(ADDR+OFFSET_STRING_BYTES, l)
+    return bytes(mem).decode(ENCODING)
 
-def writeRtcMemDict(d):
-  writeRtcMem(str(d))
+  def writeRtcMemDict(self, d):
+    self.writeRtcMem(str(d))
 
-def readRtcMemDict():
-  s = readRtcMem(default='{}')
-  d = eval(s)
-  return d
+  def readRtcMemDict():
+    s = self.readRtcMem(self, default='{}')
+    d = eval(s)
+    return d
+
+objRtcMem = RtcMem()
