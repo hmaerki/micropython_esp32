@@ -11,7 +11,7 @@ strMAC = ':'.join(['%02X'%i for i in machine.unique_id()])
 
 # See: https://github.com/tempstabilizer2018group/temp_stabilizer_2018/blob/master/software_rpi/rpi_root/etc/dhcpcd.conf
 strGATEWAY_PI = '192.168.4.1'
-strSERVER_PI = 'http://%s:3001' % strGATEWAY_PI
+strSERVER_PI = 'http://%s' % strGATEWAY_PI
 strSERVER_DEFAULT = 'http://www.tempstabilizer2018.org'
 
 # See: https://github.com/tempstabilizer2018group/temp_stabilizer_2018/blob/master/software_rpi/rpi_root/etc/hostapd/hostapd.conf
