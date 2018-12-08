@@ -4,7 +4,8 @@ import uos
 import utime
 import machine
 
-strFILENAME_SW_VERSION = 'VERSION'
+# See: https://github.com/tempstabilizer2018group/tempstabilizer2018/blob/master/software/http_server/python/python3_github_pull.py
+strFILENAME_SW_VERSION = 'VERSION.TXT'
 
 strMAC = ':'.join(['%02X'%i for i in machine.unique_id()])
 
