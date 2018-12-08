@@ -25,7 +25,7 @@ by firmware programming).
         time.sleep(3)
 
 def setup():
-    check_bootsec()
+    # check_bootsec()
     print("Performing initial setup")
     uos.VfsFat.mkfs(bdev)
     vfs = uos.VfsFat(bdev)
@@ -38,7 +38,14 @@ def setup():
 #esp.osdebug(None)
 #import webrepl
 #webrepl.start()
+
 import hw_update_ota
-hw_update_ota.formatOrUpdateAndReboot()
+
+# Register some useful commands
+formatAndReboot = hw_update_ota.Command(hw_update_ota.formatAndReboot)
+import machine
+reboot = hw_update_ota.Command(machine.reset)
+
+hw_update_ota.checkUpdate()
 """)
     return vfs

@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import uos
+import utime
 import machine
 
 FILENAME_UPDATE_FINISHED = 'update_finished'
-
-listFiles = uos.listdir()
 
 pin_button = machine.Pin(16, machine.Pin.IN, machine.Pin.PULL_UP)
 pin_led = machine.Pin(22, machine.Pin.OUT)
@@ -13,7 +12,7 @@ pwm = None
 
 def pwmLed(freq=10):
   global pwm
-  pmw = machine.PWM(pin_led, freq=freq)
+  pwm = machine.PWM(pin_led, freq=freq)
 
 def setLed(bOn=True):
   global pwm
@@ -22,15 +21,18 @@ def setLed(bOn=True):
   pin_led.value(bOn)
 
 def isFilesystemEmpty():
-  return len(listFiles) == 0
+  # Only 'boot.py' exists.
+  return len(uos.listdir()) == 1
+
+def isUpdateFinished():
+  return FILENAME_UPDATE_FINISHED in uos.listdir()
 
 def reboot(strReason):
   print(strReason)
   setLed(bOn=False)
+  # uos.sync()
+  utime.sleep_ms(1000)
   machine.reset()
-
-def isUpdateFinished():
-  return FILENAME_UPDATE_FINISHED in listFiles
 
 ## States of the button
 
@@ -45,31 +47,27 @@ def isPowerOnBoot():
 def formatAndReboot():
   '''Destroy the filesystem so that it will be formatted during next boot'''
   pwmLed(freq=10)
-  if True:
-    # This will trigger code in 
-    # https://github.com/micropython/micropython/blob/master/ports/esp32/modules/inisetup.py
-    # which will format the filesystem and write 'boot.py'
-    import flashbdev
-    buf = bytearray(flashbdev.bdev.SEC_SIZE*(0xFF,))
-    flashbdev.bdev.writeblocks(0, buf)
-    reboot('Reboot to format filesystem')
-  if False:
-    # os.VfsFat.mkfs(flashbdev.bdev)
-    pass
-  if False:
-    import inisetup
-    # See: https://github.com/micropython/micropython/blob/master/ports/esp32/modules/inisetup.py
-    inisetup.setup()
+  import inisetup
+  # See: https://github.com/micropython/micropython/blob/master/ports/esp32/modules/inisetup.py
+  inisetup.setup()
+  reboot('Reboot after format filesystem')
 
-def updateAndReboot():
-  pwmLed(freq=10)
+def connect(wlan, strSsid, strPassword):
+  wlan.connect(strSsid, strPassword)
+  for iPause in range(10):
+    # Do not use self.delay_ms(): Light sleep will kill the wlan!
+    utime.sleep_ms(1000)
+    if wlan.isconnected():
+      print('connected!')
+      return True
+  return False
+
+def update(strUrl):
   import errno
-  import network
-  import utime
   import upip
   import urequests
   import upip_utarfile
-
+  
   # Forked from https://github.com/micropython/micropython/blob/master/tools/upip.py#L74
   # Expects *file* name
   def _makedirs(name, mode=0o777):
@@ -94,59 +92,72 @@ def updateAndReboot():
         ret = False
     return ret
 
-  def connect(wlan):
-    wlan.connect('waffenplatzstrasse26', 'guguseli')
-    for iPause in range(10):
-      # Do not use self.delay_ms(): Light sleep will kill the wlan!
-      utime.sleep_ms(1000)
-      if wlan.isconnected():
-        print('connected!')
-        break
-    else:
-      reboot('Could not connect to wlan')
+  print('HTTP-Get ' + strUrl)
+  r = urequests.get(strUrl)
+  if r.status_code != 200:
+    print('FAILED %d %s' % (r.status_code, r.reason))
+    return False
 
-  def update():
-    r = urequests.get('https://www.maerki.com/hans/tmp/node_heads-SLASH-master_1.tar')
-    r.status_code
-    r.reason
+  tar = upip_utarfile.TarFile(fileobj=r.raw)
+  for info in tar:
+    if info.type != upip_utarfile.REGTYPE:
+      continue
+    print('  extracting ' + info.name)
+    _makedirs(info.name)
+    subf = tar.extractfile(info)
+    upip.save_file(info.name, subf)
+  r.close()
 
-    tar = upip_utarfile.TarFile(fileobj=r.raw)
-    for info in tar:
-      if info.type != upip_utarfile.REGTYPE:
-        continue
-      print('  extracting ' + info.name)
-      _makedirs(info.name)
-      subf = tar.extractfile(info)
-      upip.save_file(info.name, subf)
-    r.close()
+  with open(FILENAME_UPDATE_FINISHED, 'w') as f:
+    pass
+  
+  print('Successful update!')
+  return True
 
-    with open(FILENAME_UPDATE_FINISHED, 'w') as f:
-      pass
+def updateAndReboot():
+  import network
+
+  pwmLed(freq=10)
 
   wlan = network.WLAN(network.STA_IF)
   wlan.active(True)
-  # listWlans = wlan.scan(200, 6)
-  connect(wlan)
 
-  update()
+  # listWlans = wlan.scan(200, 6)
+  bConnected = connect(wlan, 'waffenplatzstrasse26', 'guguseli')
+  if not bConnected:
+    reboot('Could not connect to wlan')
+
+  bSuccess = update('https://www.maerki.com/hans/tmp/node_heads-SLASH-master_1.tar')
+  if not bSuccess:
+    reboot('Could not update')
 
   wlan.active(False)
   reboot('SUCCESS: Successful update. Reboot')
 
-def formatOrUpdateAndReboot():
+def checkUpdate():
   '''
     May reboot several times to format the filesystem and do the update.
   '''
-  pin_led.value(False)
+  setLed(False)
 
   if isButtonPressed() and isPowerOnBoot():
     print('Button presed. Format')
     formatAndReboot()
 
+  if isFilesystemEmpty():
+    print('Filesystem is empty: Update')
+    updateAndReboot()
+
   if not isUpdateFinished():
     print('Update was not finished. Format')
     formatAndReboot()
 
-  if isFilesystemEmpty:
-    print('Filesystem is empty: Update')
-    updateAndReboot()
+class Command:
+  def __init__(self, func):
+    self.__func = func
+
+  def __repr__(self):
+    return self.__func()
+
+  def __call__(self):
+    return self.__repr__()
