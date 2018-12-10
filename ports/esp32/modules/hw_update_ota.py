@@ -3,9 +3,8 @@
 import uos
 import utime
 import machine
-
-# See: https://github.com/tempstabilizer2018group/tempstabilizer2018/blob/master/software/http_server/python/python3_github_pull.py
-strFILENAME_SW_VERSION = 'VERSION.TXT'
+import hw_update_ota
+import poratble_firmware_constants
 
 strMAC = ''.join(['%02X'%i for i in machine.unique_id()])
 
@@ -21,7 +20,7 @@ strWLAN_PW = None
 def __getSwVersion():
   '''TODO: Cache'''
   try:
-    with open(strFILENAME_SW_VERSION, 'r') as fIn:
+    with open(poratble_firmware_constants.strFILENAME_SW_VERSION, 'r') as fIn:
       return fIn.read().strip()
   except:
     return 'none'
@@ -36,13 +35,13 @@ def getServer(wlan):
   return strSERVER_DEFAULT
 
 def getDownloadUrl(wlan):
-  return __getUrl(wlan, 'software')
+  return __getUrl(wlan, poratble_firmware_constants.strHTTP_PATH_SOFTWAREUPDATE)
 
 def getVersionCheckUrl(wlan):
-  return __getUrl(wlan, 'versioncheck')
+  return __getUrl(wlan, poratble_firmware_constants.strHTTP_PATH_VERSIONCHECK)
 
 def __getUrl(wlan, strFunction):
-  return '%s/pull/%s.download?mac=%s&version=%s' % (getServer(wlan), strFunction, strMAC, strSwVersion)
+  return '%s/pull/%s?%s=%s&%s=%s' % (getServer(wlan), strFunction, strHTTP_ARG_MAC, strMAC, strHTTP_ARG_SWVERSION, strSwVersion)
 
 class Gpio:
   def __init__(self):
@@ -74,7 +73,7 @@ def isFilesystemEmpty():
   return len(uos.listdir()) == 1
 
 def isUpdateFinished():
-  return strFILENAME_SW_VERSION in uos.listdir()
+  return poratble_firmware_constants.strFILENAME_SW_VERSION in uos.listdir()
 
 def reboot(strReason):
   print(strReason)
@@ -86,8 +85,9 @@ def reboot(strReason):
 def formatAndReboot():
   '''Destroy the filesystem so that it will be formatted during next boot'''
   objGpio.pwmLed(freq=10)
-  import inisetup
+  # This will trigger a format of the filesystem and the creation of booty.py.
   # See: https://github.com/micropython/micropython/blob/master/ports/esp32/modules/inisetup.py
+  import inisetup
   inisetup.setup()
   reboot('Reboot after format filesystem')
 
