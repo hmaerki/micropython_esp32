@@ -4,7 +4,7 @@ import uos
 import utime
 import machine
 import hw_update_ota
-import poratble_firmware_constants
+import portable_firmware_constants
 
 strMAC = ''.join(['%02X'%i for i in machine.unique_id()])
 
@@ -20,7 +20,7 @@ strWLAN_PW = None
 def __getSwVersion():
   '''TODO: Cache'''
   try:
-    with open(poratble_firmware_constants.strFILENAME_SW_VERSION, 'r') as fIn:
+    with open(portable_firmware_constants.strFILENAME_VERSION, 'r') as fIn:
       return fIn.read().strip()
   except:
     return 'none'
@@ -35,13 +35,13 @@ def getServer(wlan):
   return strSERVER_DEFAULT
 
 def getDownloadUrl(wlan):
-  return __getUrl(wlan, poratble_firmware_constants.strHTTP_PATH_SOFTWAREUPDATE)
+  return __getUrl(wlan, portable_firmware_constants.strHTTP_PATH_SOFTWAREUPDATE)
 
 def getVersionCheckUrl(wlan):
-  return __getUrl(wlan, poratble_firmware_constants.strHTTP_PATH_VERSIONCHECK)
+  return __getUrl(wlan, portable_firmware_constants.strHTTP_PATH_VERSIONCHECK)
 
 def __getUrl(wlan, strFunction):
-  return '%s/pull/%s?%s=%s&%s=%s' % (getServer(wlan), strFunction, strHTTP_ARG_MAC, strMAC, strHTTP_ARG_SWVERSION, strSwVersion)
+  return '%s%s?%s=%s&%s=%s' % (getServer(wlan), strFunction, portable_firmware_constants.strHTTP_ARG_MAC, strMAC, portable_firmware_constants.strHTTP_ARG_VERSION, strSwVersion)
 
 class Gpio:
   def __init__(self):
@@ -73,7 +73,7 @@ def isFilesystemEmpty():
   return len(uos.listdir()) == 1
 
 def isUpdateFinished():
-  return poratble_firmware_constants.strFILENAME_SW_VERSION in uos.listdir()
+  return portable_firmware_constants.strFILENAME_VERSION in uos.listdir()
 
 def reboot(strReason):
   print(strReason)
@@ -234,10 +234,12 @@ def checkForNewSwAndReboot(wlan):
   '''
   strSwVersionGit = getSwVersionGit(wlan)
   if strSwVersionGit != None:
-    print('Software versions: node/git: %s/%s' % (strSwVersion, strSwVersionGit))
+    print('Software versions: node: %s' % strSwVersion)
+    print('Software versions: git:  %s' % strSwVersionGit)
     if strSwVersionGit != strSwVersion:
       print('Software version CHANGED')
       return True
+    print('Software version EQUAL')
   return False
   
 def checkForNewSwAndRebootRepl():
