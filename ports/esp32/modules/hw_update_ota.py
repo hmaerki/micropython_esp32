@@ -27,6 +27,30 @@ def __getSwVersion():
 
 strSwVersion = __getSwVersion()
 
+def setRtcRamSSID(strWlanSsid, strWlanPw):
+  import hw_rtc_mem
+  d = hw_rtc_mem.objRtcMem.readRtcMemDict()
+  d[portable_firmware_constants.strWLAN_SSID] = strWlanSsid
+  d[portable_firmware_constants.strWLAN_PW] = strWlanPw
+  hw_rtc_mem.objRtcMem.writeRtcMemDict(d)
+
+def getRtcRamSSID():
+  '''
+    If the application stored a SSID and a PW in the RtcRam: Use these.
+    Else use the hardcoded SSID and PW
+  '''
+  if objGpio.isPowerOnBoot():
+    # On power on, the RtcMem is invalid. Don event try to read it.
+    return strWLAN_SSID, strWLAN_PW
+  import hw_rtc_mem
+  d = hw_rtc_mem.objRtcMem.readRtcMemDict()
+  strWlanSsid = d.get(portable_firmware_constants.strWLAN_SSID, None)
+  if strWlanSsid == None:
+    # The application didn't store a Ssid
+    return strWLAN_SSID, strWLAN_PW
+  strWlanPw = d.get(portable_firmware_constants.strWLAN_PW, None)
+  return strWlanSsid, strWlanPw
+
 def getServer(wlan):
   listIfconfig = wlan.ifconfig()
   strGateway = listIfconfig[2]
@@ -158,6 +182,14 @@ def connect(wlan, strSsid, strPassword):
       return True
   return False
 
+def scanSsid(wlan, strSsid, iScanTime_ms=1500, iChannel=0):
+  listWlans = wlan.scan(iScanTime_ms, iChannel)
+  for listWlan in listWlans:
+    strSsid_ = listWlan[0].decode()
+    if strSsid_ == strSsid:
+      return True
+  return False
+    
 def connectWlanReboot():
   import network
 
@@ -166,11 +198,15 @@ def connectWlanReboot():
   wlan = network.WLAN(network.STA_IF)
   wlan.active(True)
 
-  # listWlans = wlan.scan(200, 6)
-  print('Connecting to %s/%s' % (strWLAN_SSID, strWLAN_PW))
-  bConnected = connect(wlan, strWLAN_SSID, strWLAN_PW)
+  strWlanSsid, strWlanPw = getRtcRamSSID()
+
+  if not scanSsid(wlan, strWlanSsid):
+    reboot('Scan failed for wlan "%s"' % strWlanSsid)
+
+  print('Connecting to %s/%s' % (strWlanSsid, strWlanPw))
+  bConnected = connect(wlan, strWlanSsid, strWlanPw)
   if not bConnected:
-    reboot('Could not connect to wlan' )
+    reboot('Could not connect to wlan "%s/%s"' % (strWlanSsid, strWlanPw))
   return wlan
 
 def updateAndReboot():

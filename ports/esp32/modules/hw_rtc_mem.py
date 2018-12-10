@@ -56,7 +56,7 @@ class RtcMem:
     '''
     l = machine.mem32[ADDR+0]
     if (l<=0) or (l>0x2000-OFFSET_MAGIC_BYTES):
-      print('RTC-Mem: wrong size.')
+      print('RTC-Mem: wrong size. Use default.')
       return default
     l_aligned4 = l + 4 - l%4
     if machine.mem32[ADDR+l_aligned4+OFFSET_MAGIC_BYTES] != MAGIC:
@@ -68,8 +68,8 @@ class RtcMem:
   def writeRtcMemDict(self, d):
     self.writeRtcMem(str(d))
 
-  def readRtcMemDict():
-    s = self.readRtcMem(self, default='{}')
+  def readRtcMemDict(self):
+    s = self.readRtcMem(default='{}')
     d = eval(s)
     return d
 
