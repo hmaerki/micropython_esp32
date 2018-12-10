@@ -42,6 +42,7 @@ def setup():
 import hw_update_ota
 
 # Register some useful commands
+setRtcRamSSID = hw_update_ota.setRtcRamSSID
 checkForNewSwAndReboot = hw_update_ota.Command(hw_update_ota.checkForNewSwAndRebootRepl)
 updateAndReboot = hw_update_ota.Command(hw_update_ota.updateAndReboot)
 formatAndReboot = hw_update_ota.Command(hw_update_ota.formatAndReboot)
