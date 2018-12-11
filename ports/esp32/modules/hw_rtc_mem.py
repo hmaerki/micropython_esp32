@@ -56,11 +56,11 @@ class RtcMem:
     '''
     l = machine.mem32[ADDR+0]
     if (l<=0) or (l>0x2000-OFFSET_MAGIC_BYTES):
-      print('RTC-Mem: wrong size. Use default.')
+      print('RTC-Mem UNITIALIZED (wrong size).')
       return default
     l_aligned4 = l + 4 - l%4
     if machine.mem32[ADDR+l_aligned4+OFFSET_MAGIC_BYTES] != MAGIC:
-      print('RTC-Mem: Wrong magic number.')
+      print('RTC-Mem UNITIALIZED (magic number dismatch)')
       return default
     mem = uctypes.bytearray_at(ADDR+OFFSET_STRING_BYTES, l)
     return bytes(mem).decode(ENCODING)

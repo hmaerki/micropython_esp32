@@ -32,22 +32,22 @@ def getRtcRamSSID():
   '''
   if objGpio.isPowerOnBoot():
     # On power on, the RtcMem is invalid. Don event try to read it.
-    return strWLAN_SSID, strWLAN_PW
+    return portable_firmware_constants.strWLAN_SSID, portable_firmware_constants.strWLAN_PW
   import hw_rtc_mem
   d = hw_rtc_mem.objRtcMem.readRtcMemDict()
   strWlanSsid = d.get(portable_firmware_constants.strWLAN_SSID, None)
   if strWlanSsid == None:
     # The application didn't store a Ssid
-    return strWLAN_SSID, strWLAN_PW
+    return portable_firmware_constants.strWLAN_SSID, portable_firmware_constants.strWLAN_PW
   strWlanPw = d.get(portable_firmware_constants.strWLAN_PW, None)
   return strWlanSsid, strWlanPw
 
 def getServer(wlan):
   listIfconfig = wlan.ifconfig()
   strGateway = listIfconfig[2]
-  if strGateway == hw_update_ota.strGATEWAY_PI:
-    return hw_update_ota.strSERVER_PI
-  return hw_update_ota.strSERVER_DEFAULT
+  if strGateway == portable_firmware_constants.strGATEWAY_PI:
+    return portable_firmware_constants.strSERVER_PI
+  return portable_firmware_constants.strSERVER_DEFAULT
 
 def getDownloadUrl(wlan):
   return __getUrl(wlan, portable_firmware_constants.strHTTP_PATH_SOFTWAREUPDATE)
@@ -265,15 +265,15 @@ def getSwVersionGit(wlan):
     print('FAILED %s' % e)
   return None
 
-def checkForNewSwAndReboot(wlan):
+def checkIfNewSwVersion(wlan):
   '''
     returns True: The version changed
     returns False: Same version or error
   '''
   strSwVersionGit = getSwVersionGit(wlan)
   if strSwVersionGit != None:
-    print('Software versions: node: %s' % strSwVersion)
-    print('Software versions: git:  %s' % strSwVersionGit)
+    print('Software version node: %s' % strSwVersion)
+    print('Software version git:  %s' % strSwVersionGit)
     if strSwVersionGit != strSwVersion:
       print('Software version CHANGED')
       return True
@@ -282,7 +282,7 @@ def checkForNewSwAndReboot(wlan):
   
 def checkForNewSwAndRebootRepl():
   wlan = connectWlanReboot()
-  bNewSwVersion = checkForNewSwAndReboot(wlan)
+  bNewSwVersion = checkIfNewSwVersion(wlan)
   wlan.active(False)
   if bNewSwVersion:
     formatAndReboot()
