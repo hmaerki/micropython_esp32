@@ -8,15 +8,6 @@ import portable_firmware_constants
 
 strMAC = ''.join(['%02X'%i for i in machine.unique_id()])
 
-# See: https://github.com/tempstabilizer2018group/temp_stabilizer_2018/blob/master/software_rpi/rpi_root/etc/dhcpcd.conf
-strGATEWAY_PI = '192.168.4.1'
-strSERVER_PI = 'http://%s' % strGATEWAY_PI
-strSERVER_DEFAULT = 'http://www.tempstabilizer2018.org'
-
-# See: https://github.com/tempstabilizer2018group/temp_stabilizer_2018/blob/master/software_rpi/rpi_root/etc/hostapd/hostapd.conf
-strWLAN_SSID = 'TempStabilizer2018'
-strWLAN_PW = None
-
 def __getSwVersion():
   '''TODO: Cache'''
   try:
@@ -54,9 +45,9 @@ def getRtcRamSSID():
 def getServer(wlan):
   listIfconfig = wlan.ifconfig()
   strGateway = listIfconfig[2]
-  if strGateway == strGATEWAY_PI:
-    return strSERVER_PI
-  return strSERVER_DEFAULT
+  if strGateway == hw_update_ota.strGATEWAY_PI:
+    return hw_update_ota.strSERVER_PI
+  return hw_update_ota.strSERVER_DEFAULT
 
 def getDownloadUrl(wlan):
   return __getUrl(wlan, portable_firmware_constants.strHTTP_PATH_SOFTWAREUPDATE)
@@ -183,7 +174,18 @@ def connect(wlan, strSsid, strPassword):
   return False
 
 def scanSsid(wlan, strSsid, iScanTime_ms=1500, iChannel=0):
+  # wlan.scan(scan_time_ms, channel)
+  # scan_time_ms > 0: Active scan
+  # scan_time_ms < 0: Passive scan
+  # channel: 0: All 11 channels
   listWlans = wlan.scan(iScanTime_ms, iChannel)
+  # wlan.scan()
+  # I (5108415) network: event 1
+  # [
+  # (b'rumenigge', b'Dn\xe5]$D', 1, -37, 3, False),
+  # (b'waffenplatzstrasse26', b'\xa0\xf3\xc1KIP', 6, -77, 4, False),
+  # (b'ubx-92907', b'\x08j\n.a\x00', 10, -92, 3, False)
+  # ]
   for listWlan in listWlans:
     strSsid_ = listWlan[0].decode()
     if strSsid_ == strSsid:
