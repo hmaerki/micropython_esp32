@@ -20,7 +20,7 @@ strFILENAME_VERSION = 'VERSION.TXT'
 
 # See: https://github.com/tempstabilizer2018group/temp_stabilizer_2018/blob/master/software_rpi/rpi_root/etc/hostapd/hostapd.conf
 strWLAN_SSID = 'TempStabilizer2018'
-strWLAN_PW = None
+strWLAN_PW = 'wmm_enabled'
 
 # See: https://github.com/tempstabilizer2018group/temp_stabilizer_2018/blob/master/software_rpi/rpi_root/etc/dhcpcd.conf
 strGATEWAY_PI = '192.168.4.1'
