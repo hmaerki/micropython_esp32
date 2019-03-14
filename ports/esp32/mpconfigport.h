@@ -95,7 +95,7 @@
 #define MICROPY_PY_COLLECTIONS_ORDEREDDICT  (1)
 #define MICROPY_PY_MATH                     (1)
 #define MICROPY_PY_MATH_SPECIAL_FUNCTIONS   (1)
-#define MICROPY_PY_CMATH                    (1)
+#define MICROPY_PY_CMATH                    (0)  // Hans
 #define MICROPY_PY_GC                       (1)
 #define MICROPY_PY_IO                       (1)
 #define MICROPY_PY_IO_IOBASE                (1)
@@ -112,24 +112,24 @@
 #define MICROPY_PY_UERRNO                   (1)
 #define MICROPY_PY_USELECT                  (1)
 #define MICROPY_PY_UTIME_MP_HAL             (1)
-#define MICROPY_PY_THREAD                   (1)
-#define MICROPY_PY_THREAD_GIL               (1)
-#define MICROPY_PY_THREAD_GIL_VM_DIVISOR    (32)
+#define MICROPY_PY_THREAD                   (0)  // Hans
+#define MICROPY_PY_THREAD_GIL               (0)  // Hans
+#define MICROPY_PY_THREAD_GIL_VM_DIVISOR    (0)  // Hans (was 32)
 
 // extended modules
 #define MICROPY_PY_UCTYPES                  (1)
-#define MICROPY_PY_UZLIB                    (1)
-#define MICROPY_PY_UJSON                    (1)
-#define MICROPY_PY_URE                      (1)
-#define MICROPY_PY_URE_SUB                  (1)
+#define MICROPY_PY_UZLIB                    (1)  // Hans - Didn't work
+#define MICROPY_PY_UJSON                    (1)  // Hans - Didn't work
+#define MICROPY_PY_URE                      (1)  // Hans - Didn't work
+#define MICROPY_PY_URE_SUB                  (1)  // Hans
 #define MICROPY_PY_UHEAPQ                   (1)
 #define MICROPY_PY_UTIMEQ                   (1)
 #define MICROPY_PY_UHASHLIB                 (1)
 #define MICROPY_PY_UHASHLIB_SHA1            (1)
 #define MICROPY_PY_UHASHLIB_SHA256          (1)
-#define MICROPY_PY_UCRYPTOLIB               (1)
-#define MICROPY_PY_UBINASCII                (1)
-#define MICROPY_PY_UBINASCII_CRC32          (1)
+#define MICROPY_PY_UCRYPTOLIB               (0)  // Hans
+#define MICROPY_PY_UBINASCII                (1)  // Hans - Didn't work
+#define MICROPY_PY_UBINASCII_CRC32          (0)  // Hans
 #define MICROPY_PY_URANDOM                  (1)
 #define MICROPY_PY_URANDOM_EXTRA_FUNCS      (1)
 #define MICROPY_PY_OS_DUPTERM               (1)
@@ -147,8 +147,8 @@
 #define MICROPY_SSL_MBEDTLS                 (1)
 #define MICROPY_PY_USSL_FINALISER           (1)
 #define MICROPY_PY_WEBSOCKET                (1)
-#define MICROPY_PY_WEBREPL                  (1)
-#define MICROPY_PY_FRAMEBUF                 (1)
+#define MICROPY_PY_WEBREPL                  (0)  // Hans
+#define MICROPY_PY_FRAMEBUF                 (0)  // Hans
 #define MICROPY_PY_USOCKET_EVENTS           (MICROPY_PY_WEBREPL)
 
 // fatfs configuration

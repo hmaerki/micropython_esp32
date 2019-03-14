@@ -38,21 +38,26 @@ OFFSET_MAGIC_BYTES = 8
 ENCODING = 'utf-8'
 
 class RtcMem:
-  def writeRtcMem(self, s):
+  def writeRtcMemBytes(self, b):
     '''
       Writes a string into the slow memory.
     '''
-    b = bytes(s, ENCODING)
-    l = len(s)
+    l = len(b)
     l_aligned4 = l + 4 - l%4
     machine.mem32[ADDR+0] = l
     machine.mem32[ADDR+l_aligned4+OFFSET_MAGIC_BYTES] = MAGIC
     mem = uctypes.bytearray_at(ADDR+OFFSET_STRING_BYTES, l)
     mem[:l] = b
 
-  def readRtcMem(self, default=''):
+  def writeRtcMem(self, s):
     '''
-      Reads a string into the slow memory.
+      Writes a string into the slow memory.
+    '''
+    self.writeRtcMemBytes(bytes(s, ENCODING))
+
+  def readRtcMemBytes(self, default=None):
+    '''
+      Reads a tyes from the slow memory.
     '''
     l = machine.mem32[ADDR+0]
     if (l<=0) or (l>0x2000-OFFSET_MAGIC_BYTES):
@@ -63,7 +68,16 @@ class RtcMem:
       print('RTC-Mem UNITIALIZED (magic number dismatch)')
       return default
     mem = uctypes.bytearray_at(ADDR+OFFSET_STRING_BYTES, l)
-    return bytes(mem).decode(ENCODING)
+    return bytes(mem)
+
+  def readRtcMem(self, default=''):
+    '''
+      Reads a string from the slow memory.
+    '''
+    b = self.readRtcMemBytes()
+    if b is None:
+      return default
+    return b.decode(ENCODING)
 
   def writeRtcMemDict(self, d):
     self.writeRtcMem(str(d))

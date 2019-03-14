@@ -136,6 +136,10 @@ void usocket_events_handler(void) {
     }
 }
 
+#else // MICROPY_PY_USOCKET_EVENTS
+
+void usocket_events_deinit(void) {}
+
 #endif // MICROPY_PY_USOCKET_EVENTS
 
 NORETURN static void exception_from_errno(int _errno) {

@@ -31,6 +31,7 @@ def setup():
     vfs = uos.VfsFat(bdev)
     uos.mount(vfs, '/flash')
     uos.chdir('/flash')
+#ifdef COMMENT
     with open("boot.py", "w") as f:
         f.write("""\
 # This file is executed on every boot (including wake-boot from deepsleep)
@@ -38,17 +39,6 @@ def setup():
 #esp.osdebug(None)
 #import webrepl
 #webrepl.start()
-
-import hw_update_ota
-
-# Register some useful commands
-setRtcRamSSID = hw_update_ota.setRtcRamSSID
-checkForNewSwAndReboot = hw_update_ota.Command(hw_update_ota.checkForNewSwAndRebootRepl)
-updateAndReboot = hw_update_ota.Command(hw_update_ota.updateAndReboot)
-formatAndReboot = hw_update_ota.Command(hw_update_ota.formatAndReboot)
-import machine
-reboot = hw_update_ota.Command(machine.reset)
-
-hw_update_ota.bootCheckUpdate()
 """)
+#endif // COMMENT
     return vfs

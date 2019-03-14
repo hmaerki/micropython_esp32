@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+
+import sys
 import usocket
 import hw_utils
 
@@ -32,6 +35,7 @@ class Response:
         import ujson
         return ujson.loads(self.content)
 
+iBufferSize = 1024
 
 def request(method, url, data=None, json=None, headers={}, stream=None, streamlen=None):
     try:
@@ -84,7 +88,7 @@ def request(method, url, data=None, json=None, headers={}, stream=None, streamle
         if stream:
           # print('******* streamlen: %d' % streamlen)
           while True:
-            junk = stream.read(1024)
+            junk = stream.read(iBufferSize)
             # print('******* junk: %d' % len(junk))
             if len(junk) == 0:
               break
