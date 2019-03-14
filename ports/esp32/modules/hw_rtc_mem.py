@@ -16,13 +16,13 @@ https://github.com/micropython/micropython/pull/4046
 
 Tesing:
 import hw_rtc_mem
-hw_rtc_mem.writeRtcMemDict({'a': 'Hallo', 5: 4711})
+hw_rtc_mem.objRtcMem.writeRtcMemDict({'a': 'Hallo', 5: 4711})
 
 import machine
 machine.reset()
 
 import hw_rtc_mem
-hw_rtc_mem.readRtcMemDict()
+hw_rtc_mem.objRtcMem.readRtcMemDict()
 
 ASSERT; The dictionary above must be displayed!
 
